@@ -1,0 +1,350 @@
+.container {
+  position: relative;
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 16/9;
+  background: #000;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  cursor: pointer;
+  margin: 0 auto;
+}
+
+.container.fullscreen {
+  max-width: none;
+  border-radius: 0;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: #000;
+}
+
+.iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Buffering Overlay */
+.bufferingOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 4px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Seek Indicator */
+.seekIndicator {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 16px 20px;
+  border-radius: 50px;
+  color: white;
+  animation: seekPop 0.5s ease;
+  z-index: 10;
+}
+
+.seekIndicator.left {
+  left: 20%;
+}
+
+.seekIndicator.right {
+  right: 20%;
+}
+
+.seekIndicator span {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@keyframes seekPop {
+  0% { opacity: 0; transform: translateY(-50%) scale(0.8); }
+  50% { opacity: 1; transform: translateY(-50%) scale(1.1); }
+  100% { opacity: 0; transform: translateY(-50%) scale(1); }
+}
+
+/* Center Play Button */
+.centerPlayBtn {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  z-index: 5;
+}
+
+.centerPlayBtn:hover {
+  background: rgba(99, 102, 241, 0.8);
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+/* Controls */
+.controls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+  padding: 40px 12px 12px;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.controls.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Progress Bar */
+.progressBar {
+  height: 5px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 3px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  position: relative;
+  transition: height 0.15s ease;
+}
+
+.progressBar:hover {
+  height: 8px;
+}
+
+.progressFilled {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 3px;
+  transition: width 0.1s linear;
+}
+
+.progressHandle {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  background: white;
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  transition: transform 0.15s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.progressBar:hover .progressHandle {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* Bottom Controls */
+.bottomControls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.leftControls,
+.rightControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.controlBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: none;
+  color: white;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: all 0.2s ease;
+}
+
+.controlBtn:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Volume Control */
+.volumeControl {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.volumeSlider {
+  width: 0;
+  opacity: 0;
+  transition: all 0.3s ease;
+  accent-color: #6366f1;
+  cursor: pointer;
+}
+
+.volumeControl:hover .volumeSlider {
+  width: 80px;
+  opacity: 1;
+}
+
+/* Time Display */
+.time {
+  font-size: 0.85rem;
+  color: white;
+  font-variant-numeric: tabular-nums;
+  margin-left: 8px;
+}
+
+/* Speed Control */
+.speedControl {
+  position: relative;
+}
+
+.speedLabel {
+  font-size: 0.75rem;
+  margin-left: 2px;
+}
+
+.speedMenu {
+  position: absolute;
+  bottom: 100%;
+  right: 0;
+  background: rgba(20, 20, 20, 0.95);
+  border-radius: var(--radius-md);
+  padding: 8px;
+  margin-bottom: 8px;
+  min-width: 80px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+.speedOption {
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 0.9rem;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  text-align: center;
+  transition: all 0.15s ease;
+}
+
+.speedOption:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+
+.speedOption.active {
+  background: rgba(99, 102, 241, 0.3);
+  color: #a5b4fc;
+}
+
+/* Placeholder */
+.placeholder {
+  width: 100%;
+  max-width: 900px;
+  aspect-ratio: 16/9;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.placeholderIcon {
+  font-size: 4rem;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .controlBtn {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .time {
+    font-size: 0.75rem;
+  }
+  
+  .centerPlayBtn {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .centerPlayBtn svg {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .volumeSlider {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .bottomControls {
+    gap: 4px;
+  }
+  
+  .controlBtn {
+    width: 32px;
+    height: 32px;
+  }
+  
+  .leftControls,
+  .rightControls {
+    gap: 2px;
+  }
+  
+  .speedLabel {
+    display: none;
+  }
+}
