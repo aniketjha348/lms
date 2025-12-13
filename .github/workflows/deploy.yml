@@ -51,8 +51,18 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
+          command_timeout: 30m
           script: |
             cd /home/ec2-user/server
-            git pull origin main || git clone https://github.com/aniketjha348/lms.git /home/ec2-user/lms-temp && cp -r /home/ec2-user/lms-temp/server/* /home/ec2-user/server/ && rm -rf /home/ec2-user/lms-temp
+            # Reset any changes to ensure we can pull
+            git reset --hard HEAD || true
+            git clean -fd || true
+
+            # Pull latest changes
+            git pull origin main || ( rm -rf .git && git init && git remote add origin https://github.com/aniketjha348/lms.git && git pull origin main )
+
+            # Install dependencies
             npm install
-            pm2 restart lms-backend || pm2 start server.js --name lms-backend
+
+            # Restart server with updated env (env file is already on server)
+            pm2 restart lms-backend --update-env || pm2 start server.js --name lms-backend
