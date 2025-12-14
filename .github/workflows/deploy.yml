@@ -1,68 +1,129 @@
-name: Deploy LMS
+name: Deploy LMS Application
 
 on:
   push:
     branches: [main]
+  workflow_dispatch: # Allow manual trigger
+
+env:
+  AWS_REGION: ap-south-1
+  S3_BUCKET: lms-frontend-aniket-2024
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
 
 jobs:
+  # ============================================
+  # FRONTEND DEPLOYMENT - S3 + CloudFront
+  # ============================================
   deploy-frontend:
+    name: 🚀 Deploy Frontend
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 📦 Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: "18"
           cache: "npm"
           cache-dependency-path: client/package-lock.json
 
-      - name: Install Dependencies
+      - name: 📚 Install Dependencies
         working-directory: ./client
         run: npm ci
 
-      - name: Create .env.production
+      - name: ⚙️ Create Production Environment
         working-directory: ./client
-        run: echo "VITE_API_URL=${{ secrets.API_URL }}" > .env.production
+        run: |
+          echo "VITE_API_URL=${{ secrets.API_URL }}" > .env.production
 
-      - name: Build
+      - name: 🏗️ Build Application
         working-directory: ./client
         run: npm run build
 
-      - name: Configure AWS Credentials
+      - name: 🔐 Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-south-1
+          aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy to S3
+      - name: 📤 Deploy to S3
         working-directory: ./client
-        run: aws s3 sync dist/ s3://lms-frontend-aniket-2024 --delete
+        run: |
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }} --delete
+          echo "✅ Files synced to S3"
 
+      - name: 🔄 Invalidate CloudFront Cache
+        if: ${{ env.CLOUDFRONT_DISTRIBUTION_ID != '' }}
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"
+          echo "✅ CloudFront cache invalidated"
+
+  # ============================================
+  # BACKEND DEPLOYMENT - EC2
+  # ============================================
   deploy-backend:
+    name: 🖥️ Deploy Backend
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+    needs: deploy-frontend # Run after frontend succeeds
 
-      - name: Deploy to EC2
+    steps:
+      - name: 📥 Checkout Code
+        uses: actions/checkout@v4
+
+      - name: 🚀 Deploy to EC2 via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ec2-user
           key: ${{ secrets.EC2_SSH_KEY }}
-          command_timeout: 30m
+          port: 22
+          command_timeout: 15m
           script: |
-            cd /home/ec2-user/server
-            # Reset any changes to ensure we can pull
-            git reset --hard HEAD || true
-            git clean -fd || true
+            echo "🔄 Starting deployment..."
 
-            # Pull latest changes
-            git pull origin main || ( rm -rf .git && git init && git remote add origin https://github.com/aniketjha348/lms.git && git pull origin main )
+            # Navigate to server directory
+            cd /home/ec2-user/server || exit 1
 
-            # Install dependencies
-            npm install
+            # Pull latest code from GitHub
+            echo "📥 Pulling latest code..."
+            git fetch origin main
+            git reset --hard origin/main
 
-            # Restart server with updated env (env file is already on server)
+            # Install/update dependencies
+            echo "📦 Installing dependencies..."
+            npm install --production
+
+            # Restart the application
+            echo "🔄 Restarting server..."
             pm2 restart lms-backend --update-env || pm2 start server.js --name lms-backend
+            pm2 save
+
+            echo "✅ Backend deployment complete!"
+
+  # ============================================
+  # DEPLOYMENT SUMMARY
+  # ============================================
+  notify:
+    name: 📋 Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-frontend, deploy-backend]
+    if: always()
+
+    steps:
+      - name: 📊 Print Summary
+        run: |
+          echo "=========================================="
+          echo "🎉 LMS DEPLOYMENT COMPLETE"
+          echo "=========================================="
+          echo ""
+          echo "Frontend: https://d27j13qsr4dlbg.cloudfront.net"
+          echo "Backend:  http://${{ secrets.EC2_HOST }}:5000"
+          echo ""
+          echo "Frontend Job: ${{ needs.deploy-frontend.result }}"
+          echo "Backend Job:  ${{ needs.deploy-backend.result }}"
+          echo "=========================================="
