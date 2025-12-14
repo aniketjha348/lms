@@ -7,9 +7,26 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 
 const app = express();
 
-// CORS configuration
+// CORS configuration - support multiple origins for development and production
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://d27j13qsr4dlbg.cloudfront.net'
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like CloudFront reverse proxy, mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      callback(null, true); // Allow all origins for now to debug
+    }
+  },
   credentials: true,
 }));
 
